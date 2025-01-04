@@ -1,17 +1,4 @@
 @echo off
-setlocal enabledelayedexpansion
-
-:: Function to print colored messages
-:print_color
-set "color_code=%~1"
-set "background_code=%~2"
-shift
-shift
-echo.
-echo [!color_code!] [!background_code!] %*
-echo.
-goto :eof
-
 :: Check prerequisites: Docker
 docker --version >nul 2>&1
 if %errorlevel% neq 0 (
@@ -27,43 +14,30 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Create .env file
+docker login ghcr.io
+
 echo # Env file for docker compose file > .env
 
-:: Prompt for admin password
-:input_password
-set /p "admin_password=Enter the admin password for Identity management system (min 8 characters): "
-if not "!admin_password!"=="" if "!admin_password:~7!"=="" (
-    echo ENV_ADMIN_PASS=!admin_password! >> .env
-) else (
-    echo Password must be at least 8 characters long.
-    goto input_password
-)
+echo "Enter the admin password for Identity management system. Identity management system will be setup with user = admin and password you enter here."
+set /p admin_password=Enter the admin password (min 8 characters):
 
-:: Pull Docker images
-echo Pulling Docker images...
+echo ENV_ADMIN_PASS=${admin_password} >> .env
+
+echo "Pulling Docker images..."
 docker compose pull
+
 if %errorlevel% neq 0 (
-    echo Failed to pull Docker images. Please check your Docker setup.
-    exit /b 1
+  echo "Failed to pull Docker images. Please check your Docker setup."
+  exit /b 1
 )
 
-:: Start the application
-echo Starting the application...
+echo "Starting the application..."
+
 docker compose up -d
+
 if %errorlevel% neq 0 (
-    echo Failed to start the application. Please check the logs.
-    exit /b 1
+  echo "Failed to start the application. Please check the logs."
+  exit /b 1
 )
 
-:: Verify services
-echo Verifying services...
-docker compose ps | find "Up" >nul
-if %errorlevel% neq 0 (
-    echo Some services failed to start. Please check the logs for details.
-    exit /b 1
-)
-
-:: Success message
-echo Installation complete. Configure your application at http://localhost:83/#/admin/setup
-exit /b 0
+echo "Installation complete. Configure your application at http://localhost:83/#/admin/setup"
