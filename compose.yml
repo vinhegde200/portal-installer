@@ -4,7 +4,7 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-db:latest
     container_name: pkgportal-db
     volumes:
-      - ./pkgportal-db_data:/var/lib/postgresql/data
+      - ./data/pkgportal-db_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: pkgportal
       POSTGRES_USER: pkgportaluser
@@ -14,7 +14,6 @@ services:
       KEYCLOAK_DB_PASSWORD: keycloakpwd
     ports:
       - '5434:5432'
-    restart: unless-stopped
     networks:
       - pkgportal-network
     healthcheck:
@@ -41,20 +40,27 @@ services:
       KC_DB_PASSWORD: keycloakpwd
       KEYCLOAK_ADMIN: admin
       KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
       KEYCLOAK_ADMIN_PASSWORD: admin123
       KEYCLOAK_ACCESS_TOKEN_LIFESPAN: 1h
       KEYCLOAK_LOGLEVEL: ALL
       KC_HOSTNAME_STRICT: false
-      KEYCLOAK_FRONTEND_URL: http://keycloak-im:84
       KC_EDGE: proxy
+      KC_METRICS_PROMETHEUS: true
+      KC_HTTP_MANAGEMENT_PORT: 9000
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_PORT: 84
+      KC_HTTPS_PORT: 443
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME_STRICT_BACKCHANNEL: false
     ports:
       - '443:443'
-      - '8080:8080'
-    restart: unless-stopped
+      - '8084:84'
+      - '9000:9000'
     networks:
       - pkgportal-network
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:8080/health/ready"]
+      test: ["CMD", "curl", "--fail", "http://localhost:84/health/ready"]
       interval: 30s
       timeout: 15s
       retries: 10
@@ -67,15 +73,23 @@ services:
   pkgportal-api:
     image: ghcr.io/eps-dockermanager/pkgportal-api:latest
     container_name: pkgportal-api
-    build: .
     depends_on:
+      redis:
+        condition: service_healthy
       pkgportal-databridge:
         condition: service_started
+      pkgportal-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:5020/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
     environment:
       HTTP_PORTS: 5020
     ports:
       - '5020:5020'
-    restart: unless-stopped
     volumes:
       - ./shared-data:/App/data
       - ./data/pkgportal-api_data:/App/data
@@ -85,50 +99,35 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-databridge:latest
     container_name: pkgportal-databridge
     depends_on:
+      redis:
+        condition: service_healthy
       liquibase-update:
         condition: service_completed_successfully
+      pkgportal-db:
+        condition: service_healthy
     environment:
       HTTP_PORTS: 5021
     ports:
       - '5021:5021'
-    restart: unless-stopped
     networks:
       - pkgportal-network
-  nginx-web:
-    image: ghcr.io/eps-dockermanager/pkgportal-web:latest
-    container_name: weblb
+  pkgportal-dataexporter:
+    image: ghcr.io/eps-dockermanager/pkgportal-dataexporter:latest
+    container_name: pkgportal-dataexporter
+    depends_on:
+      redis:
+        condition: service_healthy
+      liquibase-update:
+        condition: service_completed_successfully
+      pkgportal-db:
+        condition: service_healthy
+    environment:
+      HTTP_PORTS: 5022
     ports:
-      - 83:80
-      - 84:81
-    restart: unless-stopped
-    networks:
-      - pkgportal-network
-  liquibase-update-sql:
-    image: ghcr.io/eps-dockermanager/pkgportal-dbmanager:latest
-    container_name: liquibase-update-sql
-    depends_on:
-      pkgportal-db:
-        condition: service_healthy
-    environment:
-    - LIQUIBASE_COMMAND_URL=jdbc:postgresql://pkgportal-db:5432/pkgportal
-    - LIQUIBASE_COMMAND_CHANGELOG_FILE=/changelog.xml
-    - LIQUIBASE_COMMAND_USERNAME=pkgportaluser
-    - LIQUIBASE_COMMAND_PASSWORD=pkgportalpwd
-    command: liquibase update-sql
-    networks:
-      - pkgportal-network
-  liquibase-update:
-    image: ghcr.io/eps-dockermanager/pkgportal-dbmanager:latest
-    container_name: liquibase-update
-    depends_on:
-      pkgportal-db:
-        condition: service_healthy
-    environment:
-    - LIQUIBASE_COMMAND_URL=jdbc:postgresql://pkgportal-db:5432/pkgportal
-    - LIQUIBASE_COMMAND_CHANGELOG_FILE=/changelog.xml
-    - LIQUIBASE_COMMAND_USERNAME=pkgportaluser
-    - LIQUIBASE_COMMAND_PASSWORD=pkgportalpwd
-    command: liquibase update
+      - '5022:5022'
+    volumes:
+      - shared-data:/App/data
+      - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
   notification:
@@ -147,6 +146,7 @@ services:
       - '5028:5028'
     volumes:
       - ./shared-data:/App/data
+      - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
   redis:
@@ -175,47 +175,37 @@ services:
         condition: service_healthy
     volumes:
       - ./data/redis_insight_volume_data:/data
-    user: "1000:1000"
     environment:
       - RIHOST=redis
       - RIPORT=6379
     networks:
       - pkgportal-network
-  # liquibase-rollback-sql:
-  #   image: custom-liquibase:v1.0
-  #   build: ./liquibase
-  #   container_name: liquibase-rollback-sql
-  #   depends_on:
-  #     pkgportal-db:
-  #       condition: service_healthy
-  #   volumes:
-  #     - ./liquibase/changelogs:/liquibase/changelog
-  #     - ./logs:/liquibase/logs
-  #   environment:
-  #     - LIQUIBASE_COMMAND_URL=jdbc:postgresql://pkgportal-db:5432/pkgportal
-  #     - LIQUIBASE_COMMAND_CHANGELOG_FILE=/changelog.xml
-  #     - LIQUIBASE_COMMAND_USERNAME=pkgportaluser
-  #     - LIQUIBASE_COMMAND_PASSWORD=pkgportalpwd
-  #     - LIQUIBASE_COMMAND_TAG=<%= ENV['LIQUIBASE_COMMAND_TAG'] %> # we should replace with tag id which we want to rollback.
-  #   command: liquibase rollback-sql --output-file=logs/rollback.sql
-  #   networks:
-  #     - pkgportal-network
-  # liquibase-rollback:
-  #   image: custom-liquibase:v1.0
-  #   build: ./liquibase
-  #   container_name: liquibase-rollback
-  #   depends_on:
-  #     pkgportal-db:
-  #       condition: service_healthy
-  #   environment:
-  #     - LIQUIBASE_COMMAND_URL=jdbc:postgresql://pkgportal-db:5432/pkgportal
-  #     - LIQUIBASE_COMMAND_CHANGELOG_FILE=/changelog.xml
-  #     - LIQUIBASE_COMMAND_USERNAME=pkgportaluser
-  #     - LIQUIBASE_COMMAND_PASSWORD=pkgportalpwd
-  #     - LIQUIBASE_COMMAND_TAG=<%= ENV['LIQUIBASE_COMMAND_TAG'] %> # we should replace with tag id which we want to rollback.
-  #   command: liquibase rollback
-  #   networks:
-  #     - pkgportal-network
+  nginx-web:
+    image: ghcr.io/eps-dockermanager/pkgportal-web:latest
+    container_name: weblb
+    ports:
+      - 83:83
+      - 84:84
+      - 8443:443
+      - 8444:444
+    networks:
+      - pkgportal-network
+    volumes:
+      - ./data/nginx/cert:/cert
+  liquibase-update:
+    image: ghcr.io/eps-dockermanager/pkgportal-dbmanager:latest
+    container_name: liquibase-update
+    depends_on:
+      pkgportal-db:
+        condition: service_healthy
+    environment:
+    - LIQUIBASE_COMMAND_URL=jdbc:postgresql://pkgportal-db:5432/pkgportal
+    - LIQUIBASE_COMMAND_CHANGELOG_FILE=/changelog.xml
+    - LIQUIBASE_COMMAND_USERNAME=pkgportaluser
+    - LIQUIBASE_COMMAND_PASSWORD=pkgportalpwd
+    command: liquibase update
+    networks:
+      - pkgportal-network
   prometheus:
     image: ghcr.io/eps-dockermanager/custom-prometheus:latest
     container_name: prometheus
@@ -243,8 +233,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
-      - ./data/grafana_data:/var/lib/grafana/plugins
-    user: "472:472"
+      - ./data/grafana_data:/var/lib/grafana
     networks:
       - pkgportal-network
   postgres-exporter:
@@ -252,12 +241,9 @@ services:
     container_name: postgres-exporter
     ports:
       - "9187:9187"
-    restart: unless-stopped
     environment:
-      - DATA_SOURCE_URI=pkgportal-db:5432/pkgportal?sslmode=disable
-      - DATA_SOURCE_USER=pkgportaluser
-      - DATA_SOURCE_PASS=pkgportalpwd
-      - EXTENSION=pg_stat_statements
+      DATA_SOURCE_URI: "postgresql://pkgportaluser:pkgportalpwd@pkgportal-db:5432/pkgportal?sslmode=disable"
+      EXTENSION: "pg_stat_statements"
     command:
       - "--extend.query-path=/etc/custom-queries.yaml"
     depends_on:
@@ -265,25 +251,8 @@ services:
         condition: service_healthy
     networks:
       - pkgportal-network
-  pkgportal-dataexporter:
-    image: ghcr.io/eps-dockermanager/pkgportal-dataexporter:latest
-    container_name: pkgportal-dataexporter
-    depends_on:
-      redis:
-        condition: service_healthy
-      liquibase-update:
-        condition: service_completed_successfully
-      pkgportal-db:
-        condition: service_healthy
-    environment:
-      HTTP_PORTS: 5022
-    ports:
-      - '5022:5022'
-    volumes:
-      - shared-data:/App/data
-      - ./data/pkgportal-api_data:/App/data
-    networks:
-      - pkgportal-network
 networks:
   pkgportal-network: {}
-
+volumes:
+  shared-data:
+    driver: local
