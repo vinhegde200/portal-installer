@@ -272,7 +272,7 @@ services:
     networks:
       - pkgportal-network
   fluentd:
-    build: ./fluentd
+    image: ghcr.io/eps-dockermanager/pkgportal-fluentd:latest
     container_name: fluentd
     volumes:
       - ./data/logs:/fluentd/log
