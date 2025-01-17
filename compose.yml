@@ -95,6 +95,11 @@ services:
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.pkgportal-api
   pkgportal-databridge:
     image: ghcr.io/eps-dockermanager/pkgportal-databridge:latest
     container_name: pkgportal-databridge
@@ -111,6 +116,11 @@ services:
       - '5021:5021'
     networks:
       - pkgportal-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.pkgportal-databridge
   pkgportal-dataexporter:
     image: ghcr.io/eps-dockermanager/pkgportal-dataexporter:latest
     container_name: pkgportal-dataexporter
@@ -130,6 +140,11 @@ services:
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.pkgportal-dataexporter
   notification:
     image: ghcr.io/eps-dockermanager/pkgportal-notification:latest
     container_name: notification
@@ -149,6 +164,11 @@ services:
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: docker.notification
   redis:
     image: redis:latest
     container_name: redis
@@ -249,6 +269,17 @@ services:
     depends_on:
       pkgportal-db:
         condition: service_healthy
+    networks:
+      - pkgportal-network
+  fluentd:
+    build: ./fluentd
+    container_name: fluentd
+    volumes:
+      - ./data/logs:/fluentd/log
+    ports:
+      - "24224:24224"
+    environment:
+      - FLUENTD_CONF=fluent.conf
     networks:
       - pkgportal-network
 networks:
