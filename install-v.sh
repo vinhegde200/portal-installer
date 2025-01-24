@@ -40,7 +40,7 @@ done
 echo "ENV_ADMIN_PASS=${admin_password}" >> .env
 
 # Capture the version to be installed
-read -s -p "Enter the version to be installed: " image_version
+read -p "Enter the version to be installed: " image_version
 
 print_color 31 43 "Installing the version ${image_version}"
 echo "ENV_IMAGE_VER=${image_version}" >> .env
@@ -61,7 +61,7 @@ fi
 
 # Verify services
 if docker compose ps | grep -q "Up"; then
-  print_color 32 42 "Installation complete. Configure your application at http://localhost:83/#/admin/setup"
+  print_color 31 41 "Installation complete. Configure your application at http://localhost:83/#/admin/setup"
 else
   print_color 31 41 "Some services failed to start. Please check the logs for details."
 fi
