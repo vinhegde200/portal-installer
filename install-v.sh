@@ -61,7 +61,7 @@ fi
 
 # Verify services
 if docker compose ps | grep -q "Up"; then
-  print_color 31 41 "Installation complete. Configure your application at http://localhost:83/#/admin/setup"
+  print_color 31 43 "Installation complete. Configure your application at http://localhost:83/#/admin/setup"
 else
   print_color 31 41 "Some services failed to start. Please check the logs for details."
 fi
