@@ -8,7 +8,7 @@ if %errorlevel% neq 0 (
 
 :: Download configuration files
 echo Downloading application files...
-curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose.yml
+curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v.yml
 if %errorlevel% neq 0 (
     echo Failed to download compose.yml. Please check your internet connection and try again.
     exit /b 1
@@ -21,7 +21,11 @@ echo # Env file for docker compose file > .env
 echo "Enter the admin password for Identity management system. Identity management system will be setup with user = admin and password you enter here."
 set /p admin_password=Enter the admin password (min 8 characters):
 
-echo ENV_ADMIN_PASS=${admin_password} >> .env
+echo ENV_ADMIN_PASS=%admin_password% >> .env
+
+echo "Enter the version you want to install. e.g. v12.1.8"
+set /p image_version=Enter the version you want to install:
+echo ENV_IMAGE_VER=%image_version% >> .env
 
 echo "Pulling Docker images..."
 docker compose pull
