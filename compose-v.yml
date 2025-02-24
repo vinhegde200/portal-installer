@@ -53,6 +53,8 @@ services:
       KC_HTTPS_PORT: 443
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
+      KC_HOSTNAME: http://keycloak-im:84
     ports:
       - '443:443'
       - '8084:84'
