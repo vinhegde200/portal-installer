@@ -260,7 +260,9 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_URI: "postgresql://pkgportaluser:pkgportalpwd@pkgportal-db:5432/pkgportal?sslmode=disable"
+      DATA_SOURCE_URI: "pkgportal-db:5432/pkgportal?sslmode=disable"
+      DATA_SOURCE_USER: pkgportaluser
+      DATA_SOURCE_PASS: pkgportalpwd
       EXTENSION: "pg_stat_statements"
     command:
       - "--extend.query-path=/etc/custom-queries.yaml"
