@@ -56,9 +56,7 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
       KC_HOSTNAME: http://keycloak-im:84
     ports:
-      - '443:443'
       - '84:84'
-      - '9000:9000'
     networks:
       - pkgportal-network
     healthcheck:
@@ -90,8 +88,6 @@ services:
     restart: unless-stopped
     environment:
       HTTP_PORTS: 5020
-    ports:
-      - '5020:5020'
     volumes:
       - ./shared-data:/App/data
       - ./data/pkgportal-api_data:/App/data
@@ -116,8 +112,6 @@ services:
         condition: service_healthy
     environment:
       HTTP_PORTS: 5021
-    ports:
-      - '5021:5021'
     networks:
       - pkgportal-network
     logging:
@@ -139,10 +133,8 @@ services:
         condition: service_healthy
     environment:
       HTTP_PORTS: 5022
-    ports:
-      - '5022:5022'
     volumes:
-      - shared-data:/App/data
+      - ./shared-data:/App/data
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
@@ -165,8 +157,6 @@ services:
         condition: service_healthy
     environment:
       HTTP_PORTS: 5028
-    ports:
-      - '5028:5028'
     volumes:
       - ./shared-data:/App/data
       - ./data/pkgportal-api_data:/App/data
