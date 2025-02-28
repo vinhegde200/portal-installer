@@ -93,13 +93,6 @@ services:
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.pkgportal-api
   pkgportal-databridge:
     image: ghcr.io/eps-dockermanager/pkgportal-databridge:${ENV_IMAGE_VER}
     container_name: pkgportal-databridge
@@ -114,13 +107,6 @@ services:
       HTTP_PORTS: 5021
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.pkgportal-databridge
   pkgportal-dataexporter:
     image: ghcr.io/eps-dockermanager/pkgportal-dataexporter:${ENV_IMAGE_VER}
     container_name: pkgportal-dataexporter
@@ -138,13 +124,6 @@ services:
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.pkgportal-dataexporter
   notification:
     image: ghcr.io/eps-dockermanager/pkgportal-notification:${ENV_IMAGE_VER}
     container_name: notification
@@ -162,13 +141,6 @@ services:
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.notification
   redis:
     image: redis:latest
     container_name: redis
@@ -243,7 +215,7 @@ services:
     image: ghcr.io/eps-dockermanager/custom-grafana:${ENV_IMAGE_VER}
     container_name: grafana
     ports:
-      - "3000:3000"
+      - "3001:3000"
     restart: unless-stopped
     depends_on:
      - prometheus
