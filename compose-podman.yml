@@ -56,7 +56,7 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
       KC_HOSTNAME: http://keycloak-im:84
     ports:
-      - '84:84'
+      - '8080:84'
     networks:
       - pkgportal-network
     healthcheck:
