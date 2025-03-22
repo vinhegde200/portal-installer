@@ -89,7 +89,7 @@ services:
     environment:
       HTTP_PORTS: 5020
     volumes:
-      - ./shared-data:/App/data
+      - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
@@ -120,7 +120,7 @@ services:
     environment:
       HTTP_PORTS: 5022
     volumes:
-      - ./shared-data:/App/data
+      - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
@@ -137,7 +137,6 @@ services:
     environment:
       HTTP_PORTS: 5028
     volumes:
-      - ./shared-data:/App/data
       - ./data/pkgportal-api_data:/App/data
     networks:
       - pkgportal-network
