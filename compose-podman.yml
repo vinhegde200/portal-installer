@@ -118,6 +118,7 @@ services:
       HTTP_PORTS: 5020
     volumes:
       - ./data/pkgportal-api_data:/App/data:Z
+      - ./data/reports:/App/reports:Z
     networks:
       - pkgportal-network
   pkgportal-databridge:
@@ -144,6 +145,7 @@ services:
       HTTP_PORTS: 5022
     volumes:
       - ./data/pkgportal-api_data:/App/data:Z
+      - ./data/reports:/App/reports:Z
     networks:
       - pkgportal-network
   notification:
