@@ -18,7 +18,7 @@ fi
 
 # Clone or download configuration files
 print_color 31 43 "Downloading application files..."
-if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v.yml; then
+if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml; then
   print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
   exit 1
 fi
