@@ -49,18 +49,18 @@ services:
       KC_METRICS_PROMETHEUS: true
       KC_HTTP_MANAGEMENT_PORT: 9000
       KC_HOSTNAME_STRICT_HTTPS: false
-      KC_HTTP_PORT: 84
+      KC_HTTP_PORT: 8084
       KC_HTTPS_PORT: 443
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
-      KC_HOSTNAME: http://keycloak-im:84
+      KC_HOSTNAME: http://keycloak-im:8084
     ports:
-      - '84:84'
+      - '8084:8084'
     networks:
       - pkgportal-network
     healthcheck:
-      test: ["CMD", "curl", "--fail", "http://localhost:84/health/ready"]
+      test: ["CMD", "curl", "--fail", "http://localhost:8084/health/ready"]
       interval: 30s
       timeout: 15s
       retries: 10
@@ -176,7 +176,7 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-web:${ENV_IMAGE_VER}
     container_name: weblb
     ports:
-      - 83:83
+      - 8083:8083
       - 8443:443
     networks:
       - pkgportal-network
@@ -241,17 +241,6 @@ services:
     depends_on:
       pkgportal-db:
         condition: service_healthy
-    networks:
-      - pkgportal-network
-  fluentd:
-    image: ghcr.io/eps-dockermanager/pkgportal-fluentd:${ENV_IMAGE_VER}
-    container_name: fluentd
-    volumes:
-      - ./data/logs:/fluentd/log
-    ports:
-      - "24224:24224"
-    environment:
-      - FLUENTD_CONF=fluent.conf
     networks:
       - pkgportal-network
 networks:
