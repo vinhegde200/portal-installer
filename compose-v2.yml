@@ -5,6 +5,7 @@ services:
     container_name: pkgportal-db
     volumes:
       - ./data/pkgportal-db_data:/var/lib/postgresql/data
+      - ./data/logs/postgres:/var/log/postgresql
     environment:
       POSTGRES_DB: pkgportal
       POSTGRES_USER: pkgportaluser
@@ -30,6 +31,8 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-im:${ENV_IMAGE_VER}
     container_name: keycloak-im
     hostname: keycloak-im
+    volumes:
+      - ./data/logs:/opt/keycloak/logs
     depends_on:
       pkgportal-db:
         condition: service_healthy
@@ -91,6 +94,7 @@ services:
     volumes:
       - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
+      - ./data/logs:/App/Logs
     networks:
       - pkgportal-network
   pkgportal-databridge:
@@ -103,6 +107,8 @@ services:
         condition: service_completed_successfully
       pkgportal-db:
         condition: service_healthy
+    volumes:
+      - ./data/logs:/App/Logs
     environment:
       HTTP_PORTS: 5021
     networks:
@@ -122,6 +128,7 @@ services:
     volumes:
       - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
+      - ./data/logs:/App/Logs
     networks:
       - pkgportal-network
   notification:
@@ -138,6 +145,7 @@ services:
       HTTP_PORTS: 5028
     volumes:
       - ./data/pkgportal-api_data:/App/data
+      - ./data/logs:/App/Logs
     networks:
       - pkgportal-network
   redis:
@@ -229,5 +237,3 @@ services:
 networks:
   pkgportal-network: {}
 volumes:
-  shared-data:
-    driver: local
