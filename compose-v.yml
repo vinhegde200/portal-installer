@@ -5,6 +5,7 @@ services:
     container_name: pkgportal-db
     volumes:
       - ./data/pkgportal-db_data:/var/lib/postgresql/data
+      - ./data/logs/postgres:/var/log/postgresql
     environment:
       POSTGRES_DB: pkgportal
       POSTGRES_USER: pkgportaluser
@@ -30,6 +31,8 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-im:${ENV_IMAGE_VER}
     container_name: keycloak-im
     hostname: keycloak-im
+    volumes:
+      - ./data/logs:/opt/keycloak/logs
     depends_on:
       pkgportal-db:
         condition: service_healthy
@@ -89,17 +92,11 @@ services:
     environment:
       HTTP_PORTS: 5020
     volumes:
-      - ./shared-data:/App/data
+      - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
+      - ./data/logs:/App/Logs
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.pkgportal-api
   pkgportal-databridge:
     image: ghcr.io/eps-dockermanager/pkgportal-databridge:${ENV_IMAGE_VER}
     container_name: pkgportal-databridge
@@ -110,17 +107,12 @@ services:
         condition: service_completed_successfully
       pkgportal-db:
         condition: service_healthy
+    volumes:
+      - ./data/logs:/App/Logs
     environment:
       HTTP_PORTS: 5021
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.pkgportal-databridge
   pkgportal-dataexporter:
     image: ghcr.io/eps-dockermanager/pkgportal-dataexporter:${ENV_IMAGE_VER}
     container_name: pkgportal-dataexporter
@@ -134,17 +126,11 @@ services:
     environment:
       HTTP_PORTS: 5022
     volumes:
-      - ./shared-data:/App/data
+      - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
+      - ./data/logs:/App/Logs
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.pkgportal-dataexporter
   notification:
     image: ghcr.io/eps-dockermanager/pkgportal-notification:${ENV_IMAGE_VER}
     container_name: notification
@@ -158,17 +144,10 @@ services:
     environment:
       HTTP_PORTS: 5028
     volumes:
-      - ./shared-data:/App/data
       - ./data/pkgportal-api_data:/App/data
+      - ./data/logs:/App/Logs
     networks:
       - pkgportal-network
-    logging:
-      driver: "fluentd"
-      options:
-        fluentd-address: localhost:24224
-        fluentd-async: "true"
-        fluentd-max-retries: 3
-        tag: docker.notification
   redis:
     image: redis:latest
     container_name: redis
@@ -182,22 +161,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-    networks:
-      - pkgportal-network
-  redisinsight:
-    image: redislabs/redisinsight:latest
-    container_name: redis_insight
-    restart: always
-    ports:
-      - "8001:5540"
-    depends_on:
-      redis:
-        condition: service_healthy
-    volumes:
-      - ./data/redis_insight_volume_data:/data
-    environment:
-      - RIHOST=redis
-      - RIPORT=6379
     networks:
       - pkgportal-network
   nginx-web:
@@ -271,19 +234,5 @@ services:
         condition: service_healthy
     networks:
       - pkgportal-network
-  fluentd:
-    image: ghcr.io/eps-dockermanager/pkgportal-fluentd:${ENV_IMAGE_VER}
-    container_name: fluentd
-    volumes:
-      - ./data/logs:/fluentd/log
-    ports:
-      - "24224:24224"
-    environment:
-      - FLUENTD_CONF=fluent.conf
-    networks:
-      - pkgportal-network
 networks:
   pkgportal-network: {}
-volumes:
-  shared-data:
-    driver: local
