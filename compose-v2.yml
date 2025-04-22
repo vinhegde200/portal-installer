@@ -31,8 +31,6 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-im:${ENV_IMAGE_VER}
     container_name: keycloak-im
     hostname: keycloak-im
-    volumes:
-      - ./data/logs:/opt/keycloak/logs
     depends_on:
       pkgportal-db:
         condition: service_healthy
