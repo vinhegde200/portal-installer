@@ -167,7 +167,7 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-web:${ENV_IMAGE_VER}
     container_name: weblb
     ports:
-      - 8083:8083
+      - 8083:83
       - 8443:443
     networks:
       - pkgportal-network
