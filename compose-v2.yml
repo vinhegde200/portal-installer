@@ -236,4 +236,3 @@ services:
       - pkgportal-network
 networks:
   pkgportal-network: {}
-volumes:
