@@ -240,7 +240,7 @@ services:
     networks:
       - pkgportal-network
   ai-agent:
-    image: ghcr.io/eps-dockermanager/pkgportal-ai-agent:v12.1.23
+    image: ghcr.io/eps-dockermanager/ai-agent:v12.1.23
     container_name: ai-agent
     ports:
       - "5023:5023"
