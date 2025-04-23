@@ -232,5 +232,20 @@ services:
         condition: service_healthy
     networks:
       - pkgportal-network
+  pg-vector:
+    image: ghcr.io/eps-dockermanager/pgvector:v12.1.23
+    container_name: pg-vector
+    ports:
+      - "5532:5432"
+    networks:
+      - pkgportal-network
+  ai-agent:
+    image: ghcr.io/eps-dockermanager/pkgportal-ai-agent:v12.1.23
+    container_name: ai-agent
+    ports:
+      - "5023:5023"
+    depends_on:
+      pg-vector:
+        condition: service_healthy
 networks:
   pkgportal-network: {}
