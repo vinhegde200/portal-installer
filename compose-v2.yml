@@ -165,7 +165,7 @@ services:
     image: ghcr.io/eps-dockermanager/pkgportal-web:${ENV_IMAGE_VER}
     container_name: weblb
     ports:
-      - 8083:8083
+      - 83:83
       - 8443:443
     networks:
       - pkgportal-network
@@ -251,10 +251,15 @@ services:
   ai-agent:
     image: ghcr.io/eps-dockermanager/ai-agent:v12.1.23
     container_name: ai-agent
+    environment:
+      POSTGRES_PORT: 5432
+      CSR_BASE_URL: http://pkgportal-api:5020
     ports:
       - "5023:5023"
     depends_on:
       pg-vector:
         condition: service_healthy
+    networks:
+      - pkgportal-network
 networks:
   pkgportal-network: {}
