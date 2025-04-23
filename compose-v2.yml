@@ -235,6 +235,10 @@ services:
   pg-vector:
     image: ghcr.io/eps-dockermanager/pgvector:v12.1.23
     container_name: pg-vector
+    environment:
+      POSTGRES_DB: ai
+      POSTGRES_USER: aiuser
+      POSTGRES_PASSWORD: aipwd
     ports:
       - "5532:5432"
     networks:
