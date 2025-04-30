@@ -89,6 +89,9 @@ services:
     restart: unless-stopped
     environment:
       HTTP_PORTS: 5020
+      DATABRIDGE_SERVICE_URL: "http://pkgportal-databridge:5021"
+      NOTIFICATION_SERVICE_URL: "http://notification:5028"
+      DATAEXPORTER_SERVICE_URL: "http://pkgportal-dataexporter:5022"
     volumes:
       - ./data/reports:/App/reports
       - ./data/pkgportal-api_data:/App/data
