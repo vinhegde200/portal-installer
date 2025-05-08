@@ -56,6 +56,12 @@ services:
       KC_HOSTNAME_STRICT_BACKCHANNEL: false
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: true
       KC_HOSTNAME: http://keycloak-im:8084
+      KC_LOG: file
+      KC_LOG_FILE: /opt/keycloak/logs/keycloak.log
+      KC_LOG_LEVEL: INFO
+      KC_LOG_FORMAT: "%d{yyyy-MM-dd HH:mm} %-5p [%c{2.}] (%t) %s%e%n"
+      KC_LOG_ROTATION_MAX_FILE_SIZE: 10MB
+      KC_LOG_ROTATION_MAX_FILES: 30
     ports:
       - '8084:8084'
     networks:
