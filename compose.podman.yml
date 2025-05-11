@@ -14,7 +14,6 @@ services:
     container_name: pkgportal-db
     volumes:
       - ./data/pkgportal-db_data:/var/lib/postgresql/data:Z
-      # - ./data/logs/postgres:/var/log/postgresql:z
     environment:
       POSTGRES_DB: pkgportal
       POSTGRES_USER: pkgportaluser
@@ -68,12 +67,10 @@ services:
       - KC_LOG_FORMAT="%d{yyyy-MM-dd HH:mm} %-5p [%c{2.}] (%t) %s%e%n"
       - KC_LOG_ROTATION_MAX_FILE_SIZE=10MB
       - KC_LOG_ROTATION_MAX_FILES=30
-    #volumes:
-      # - ./data/logs/keycloak:/opt/keycloak/logs:z
     networks:
       - pkgportal-network
     healthcheck:
-      test: ["CMD", "/bin/bash", "-c", "exec 6<>/dev/tcp/localhost/5020 || exit 1"]
+      test: ["CMD", "/bin/bash", "-c", "exec 6<>/dev/tcp/localhost/8084 || exit 1"]
       interval: 30s
       timeout: 15s
       retries: 10
@@ -117,8 +114,6 @@ services:
         condition: service_healthy
       pkgportal-db:
         condition: service_healthy
-      liquibase-update:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:5020/health || exit 1"]
       interval: 30s
@@ -144,8 +139,6 @@ services:
         condition: service_healthy
       pkgportal-db:
         condition: service_healthy
-    # liquibase-update:
-    #   condition: service_completed_successfully
     volumes:
       - ./data/logs:/App/Logs:z
     environment:
@@ -160,8 +153,6 @@ services:
         condition: service_healthy
       pkgportal-db:
         condition: service_healthy
-    # liquibase-update:
-    #   condition: service_completed_successfully
     environment:
       HTTP_PORTS: 5022
     volumes:
@@ -178,8 +169,6 @@ services:
         condition: service_healthy
       pkgportal-db:
         condition: service_healthy
-    # liquibase-update:
-    #   condition: service_completed_successfully
     environment:
       HTTP_PORTS: 5028
     volumes:
