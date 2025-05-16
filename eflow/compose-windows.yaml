@@ -8,11 +8,6 @@ services:
       context: .
       args:
         EFLOW_VERSION: ${EFLOW_VERSION}
-        STATE: ${EFLOW_STATE}
-        CENTRAL_EFLOW: ${EFLOW_CENTRAL_EFLOW}
-        EMAIL: ${EFLOW_EMAIL}
-        COMPANY: ${EFLOW_COMPANY}
-        MACHINENAME: ${EFLOW_MACHINENAME}
     ports:
       - "8081:8081"
       - "6543:6543"
@@ -23,6 +18,12 @@ services:
       memlock:
         soft: -1
         hard: -1
+    environment:
+      - STATE=up
+      - CENTRAL_EFLOW=1
+      - EMAIL=radiushub@epssw.com
+      - COMPANY=ePS
+      - MACHINENAME=localdev
     deploy:
       resources:
         limits:
