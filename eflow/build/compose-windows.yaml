@@ -2,8 +2,12 @@ version: "3.8"
 name: eflow
 services:
   eflow:
-    image: ghcr.io/eps-dockermanager/custom-eflow:${EFLOW_VERSION}
+    image: custom-eflow:${EFLOW_VERSION}
     container_name: eflow
+    build:
+      context: .
+      args:
+        EFLOW_VERSION: ${EFLOW_VERSION}
     ports:
       - "8081:8081"
       - "6543:6543"
@@ -27,14 +31,19 @@ services:
     networks:
       - eflow-network
     volumes:
-      - ./eflow_data/instance:/eflow/instance:rw
-      - ./eflow_data/logs:/eflow/logs:rw
-      - ./eflow_data/elasticsearch/data:/var/lib/elasticsearch:rw
-      - ./eflow_data/elasticsearch/logs:/var/log/elasticsearch:rw
-      - ./eflow_data/dbbackup:/eflow/dbbackup:rw
+      - eflow-instance:/eflow/instance:rw
+      - eflow-logs:/eflow/logs:rw
+      - eflow-es-data:/var/lib/elasticsearch:rw
+      - eflow-es-logs:/var/log/elasticsearch:rw
+      - eflow-dbbackup:/eflow/dbbackup:rw
       - eflow-db:/var/lib/postgresql/17/main/:rw
 networks:
   eflow-network:
     driver: bridge
 volumes:
+  eflow-instance: {}
+  eflow-logs: {}
+  eflow-es-data: {}
+  eflow-es-logs: {}
+  eflow-dbbackup: {}
   eflow-db: {}
