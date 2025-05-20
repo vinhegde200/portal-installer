@@ -58,18 +58,35 @@ else
 fi
 
 print_color 31 43 "Downloading application files..."
-# if central_eflow is true, set the eflow version to latest
-if [ "$central_eflow" = true ]; then
-  # Clone or download configuration files
-  if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml; then
-    print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
-    exit 1
+if ["$container_choice" == "1" ]; then #podman
+  # if central_eflow is true, set the eflow version to latest
+  if [ "$central_eflow" = true ]; then
+    # Clone or download configuration files
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-podman.yml; then
+      print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
+      exit 1
+    fi
+  else
+    # Clone or download configuration files
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-podman-eflow.yml; then
+      print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
+      exit 1
+    fi
   fi
-else
-  # Clone or download configuration files
-  if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2-eflow.yml; then
-    print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
-    exit 1
+else #docker
+  # if central_eflow is true, set the eflow version to latest
+  if [ "$central_eflow" = true ]; then
+    # Clone or download configuration files
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml; then
+      print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
+      exit 1
+    fi
+  else
+    # Clone or download configuration files
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-docker-eflow.yml; then
+      print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
+      exit 1
+    fi
   fi
 fi
 
