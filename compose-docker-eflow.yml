@@ -296,3 +296,5 @@ services:
       - eflow-db:/var/lib/postgresql/17/main/:rw
 networks:
   pkgportal-network: {}
+volumes:
+  eflow-db: {}
