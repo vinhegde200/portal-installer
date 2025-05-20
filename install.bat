@@ -1,115 +1,118 @@
 @echo off
-REM Print colored messages (simple echo for Windows)
 setlocal enabledelayedexpansion
 
-REM Check prerequisites: Podman
-podman --version >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Podman is not installed. Please install Podman and try again.
-    exit /b 1
-)
+REM Choose containerization tool
+echo Select the containerization tool you want to use:
+echo 1. Podman
+echo 2. Docker
+set /p container_choice="Enter your choice (1 or 2): "
 
-REM Download configuration files
-echo Downloading application files...
-curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml
-if %errorlevel% neq 0 (
-    echo Failed to download compose.yml. Please check your internet connection and try again.
-    exit /b 1
-)
-
-curl -o compose-eflow.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/eflow/compose.yaml
-if %errorlevel% neq 0 (
-    echo Failed to download compose.yml of eflow. Please check your internet connection and try again.
-    exit /b 1
-)
-
-
-podman login ghcr.io
-
-REM Select eflow type
-echo Select the type of eflow you want to install:
-echo 1. Central eflow
-echo 2. Local eflow
-set /p eflow_choice=Enter your choice (1 or 2):
-
-set central_eflow=true
-set eflow_version=12.2.122040.24
-
-if "%eflow_choice%"=="1" (
-    echo You have selected Central eflow.
-) else if "%eflow_choice%"=="2" (
-    echo You have selected Local eflow.
-    set central_eflow=false
-    set /p eflow_version=Please enter eflow version, if you want default press enter:
-    if "%eflow_version%"=="" (
-        set eflow_version=12.2.122040.24
+if "%container_choice%"=="1" (
+    echo You have selected Podman.
+    podman --version >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo Podman is not installed. Please install Podman and try again.
+        exit /b 1
+    )
+) else if "%container_choice%"=="2" (
+    echo You have selected Docker.
+    docker --version >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo Docker is not installed. Please install Docker and try again.
+        exit /b 1
     )
 ) else (
     echo Invalid choice. Please run the script again and select a valid option.
     exit /b 1
 )
 
-REM Create the env file with necessary environment variables
-echo # Env file for docker compose file > .env
+REM Select eflow type
+echo Select the type of eflow you want to install:
+echo 1. Central eflow
+echo 2. Local eflow
+set central_eflow=true
+set eflow_version=12.2.122040.24
+set /p eflow_choice=Enter your choice (1 or 2):
 
-:ask_password
-echo Enter the admin password for Identity management system. Identity management system will be setup with user = admin and password you enter here.
-set /p admin_password=Enter the admin password (min 8 characters):
-if not "%admin_password:~7,1%"=="" (
-    goto password_ok
-)
-echo Password must be at least 8 characters long.
-goto ask_password
-
-:password_ok
-echo ENV_ADMIN_PASS=%admin_password% >> .env
-
-REM Capture the version to be installed
-set /p image_version=Enter the version to be installed:
-
-echo Installing the version %image_version%
-echo ENV_IMAGE_VER=%image_version% >> .env
-echo EFLOW_VERSION=%eflow_version% >> .env
-
-REM Pull Docker images
-echo Pulling Docker images...
-podman compose -f compose.yml pull
-if %errorlevel% neq 0 (
-    echo Failed to pull Docker images. Please check your Docker setup.
+if "%eflow_choice%"=="1" (
+    echo You have selected Central eflow.
+) else if "%eflow_choice%"=="2" (
+    echo You have selected Local eflow.
+    set central_eflow=false
+    set /p user_version="Enter eflow version (default is 12.2.122040.24): "
+    if not "%user_version%"=="" (
+        set eflow_version=%user_version%
+    )
+) else (
+    echo Invalid choice. Please run the script again and select a valid option.
     exit /b 1
 )
 
-REM If central_eflow is false, pull the eflow image
-if "%central_eflow%"=="false" (
-    echo Pulling eflow image...
-    podman compose -f compose-eflow.yml pull
-    if %errorlevel% neq 0 (
-        echo Failed to pull eflow image. Please check your Docker setup.
-        exit /b 1
-    )
+REM Download configuration files
+echo Downloading application files...
+if "%central_eflow%"=="true" (
+    curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml
+) else (
+    curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2-eflow.yml
+)
+if %errorlevel% neq 0 (
+    echo Failed to download compose.yml. Please check your internet connection and try again.
+    exit /b 1
+)
+
+REM Ask for admin password
+echo # Env file for docker compose file > .env
+:ask_password
+echo Enter the admin password for Identity management system. It must be at least 8 characters:
+set /p admin_password=Password: 
+call set char=%%admin_password:~7,1%%
+if "!char!"=="" (
+    echo Password must be at least 8 characters long.
+    goto ask_password
+)
+
+echo ENV_ADMIN_PASS=%admin_password% >> .env
+
+set /p image_version=Enter the version you want to install (e.g. v12.1.8): 
+echo ENV_IMAGE_VER=%image_version% >> .env
+echo EFLOW_VERSION=%eflow_version% >> .env
+
+REM Pull images
+echo Pulling images...
+if "%container_choice%"=="1" (
+    podman compose -f compose.yml pull
+) else (
+    docker compose -f compose.yml pull
+)
+if %errorlevel% neq 0 (
+    echo Failed to pull images. Please check your container setup.
+    exit /b 1
 )
 
 REM Start the application
 echo Starting the application...
-podman compose up -d
+if "%container_choice%"=="1" (
+    podman compose -f compose.yml up -d
+) else (
+    docker compose -f compose.yml up -d
+)
 if %errorlevel% neq 0 (
     echo Failed to start the application. Please check the logs.
     exit /b 1
 )
 
-if "%central_eflow%"=="false" (
-    echo Starting eflow...
-    podman compose -f compose-eflow.yml up -d
-    if %errorlevel% neq 0 (
-        echo Failed to start eflow. Please check the logs.
-        exit /b 1
-    )
+REM Verify services
+echo Verifying services...
+if "%container_choice%"=="1" (
+    podman compose ps | findstr "Up" >nul
+) else (
+    docker compose ps | findstr "Up" >nul
 )
 
-REM Verify services
-podman compose ps | findstr "Up" >nul
 if %errorlevel% equ 0 (
     echo Installation complete. Configure your application at http://localhost:8083/#/admin/setup
 ) else (
     echo Some services failed to start. Please check the logs for details.
 )
+
+endlocal

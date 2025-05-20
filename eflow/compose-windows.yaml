@@ -2,8 +2,12 @@ version: "3.8"
 name: eflow
 services:
   eflow:
-    image: ghcr.io/eps-dockermanager/custom-eflow:${EFLOW_VERSION}
+    image: custom-eflow:${EFLOW_VERSION}
     container_name: eflow
+    build:
+      context: .
+      args:
+        EFLOW_VERSION: ${EFLOW_VERSION}
     ports:
       - "8081:8081"
       - "6543:6543"

@@ -10,23 +10,30 @@ print_color() {
   echo ""
 }
 
-# Check prerequisites
-if ! command -v podman &>/dev/null; then
-  print_color 31 41 "Podman is not installed. Please install Podman and try again."
+# choose which containerization tools wants to use. podman or docker
+print_color 31 43 "Select the containerization tool you want to use:"
+print_color 31 43 "1. Podman"
+print_color 31 43 "2. Docker"
+read -p "Enter your choice (1 or 2): " container_choice
+if [[ "$container_choice" == "1" ]]; then
+  print_color 31 43 "You have selected Podman."
+  # Check if Podman is installed
+  if ! command -v podman &>/dev/null; then
+    print_color 31 41 "Podman is not installed. Please install Podman and try again."
+    exit 1
+  fi
+elif [[ "$container_choice" == "2" ]]; then
+  print_color 31 43 "You have selected Docker."
+  # Check if Docker is installed
+  if ! command -v docker &>/dev/null; then
+    print_color 31 41 "Docker is not installed. Please install Docker and try again."
+    exit 1
+  fi
+else
+  print_color 31 41 "Invalid choice. Please run the script again and select a valid option."
   exit 1
 fi
 
-# Clone or download configuration files
-print_color 31 43 "Downloading application files..."
-if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml; then
-  print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
-  exit 1
-fi
-
-if ! curl -o compose-eflow.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/eflow/compose.yml; then
-  print_color 31 41 "Failed to download compose.yml of eflow. Please check your internet connection and try again."
-  exit 1
-fi
 # set bool variable for central eflow
 central_eflow=true
 eflow_version="12.2.122040.24"
@@ -50,8 +57,21 @@ else
   exit 1
 fi
 
-# Create the env file with necessary environment variables
-echo "# Env file for docker compose file" > .env
+print_color 31 43 "Downloading application files..."
+# if central_eflow is true, set the eflow version to latest
+if [ "$central_eflow" = true ]; then
+  # Clone or download configuration files
+  if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml; then
+    print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
+    exit 1
+  fi
+else
+  # Clone or download configuration files
+  if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2-eflow.yml; then
+    print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
+    exit 1
+  fi
+fi
 
 while true; do
   print_color 31 43 "Enter the admin password for Identity management system. Identity management system will be setup with user = admin and password you enter here."
@@ -64,6 +84,8 @@ while true; do
   fi
 done
 
+# Create the env file with necessary environment variables
+echo "# Env file for docker compose file" > .env
 echo "ENV_ADMIN_PASS=${admin_password}" >> .env
 
 # Capture the version to be installed
@@ -75,38 +97,49 @@ echo "EFLOW_VERSION=${eflow_version}" >> .env
 
 # Pull Docker images
 print_color 31 43 "Pulling Docker images..."
-if ! podman compose -f compose.yaml pull; then
-  print_color 31 41 "Failed to pull Docker images. Please check your Docker setup."
-  exit 1
-fi
-
-# if central_eflow is false, pull the eflow image
-if [ "$central_eflow" = false ]; then
-  print_color 31 43 "Pulling eflow image..."
-  if ! podman compose -f compose-eflow.yaml pull; then
-    print_color 31 41 "Failed to pull eflow image. Please check your Docker setup."
+if [ "$container_choice" == "1" ]; then
+  if ! podman compose -f compose.yaml pull; then
+    print_color 31 41 "Failed to pull Docker images. Please check your Docker setup."
+    exit 1
+  fi
+else
+  if ! docker compose -f compose.yaml pull; then
+    print_color 31 41 "Failed to pull Docker images. Please check your Docker setup."
     exit 1
   fi
 fi
 
 # Start the application
 print_color 31 43 "Starting the application..."
-if ! podman compose up -d; then
-  print_color 31 41 "Failed to start the application. Please check the logs."
-  exit 1
-fi
-
-if [ "$central_eflow" = false ]; then
-  print_color 31 43 "Starting eflow..."
-  if ! podman compose -f compose-eflow.yaml up -d; then
-    print_color 31 41 "Failed to start eflow. Please check the logs."
+if [ "$container_choice" == "1" ]; then
+  if ! podman compose up -d; then
+    print_color 31 41 "Failed to start the application. Please check the logs."
+    exit 1
+  fi
+else
+  if ! docker compose up -d; then
+    print_color 31 41 "Failed to start the application. Please check the logs."
     exit 1
   fi
 fi
 
 # Verify services
-if podman compose ps | grep -q "Up"; then
-  print_color 31 43 "Installation complete. Configure your application at http://localhost:8083/#/admin/setup"
+if [ "$container_choice" == "1" ]; then
+  # Check if Podman is running
+  if podman compose ps | grep -q "Up"; then
+    print_color 31 43 "Installation complete. Configure your application at http://localhost:8083/#/admin/setup"
+    exit 1
+  fi
+  else
+     print_color 31 41 "Some services failed to start. Please check the logs for details."
+  fi
 else
-  print_color 31 41 "Some services failed to start. Please check the logs for details."
+  # Check if Docker is running
+  if docker compose ps | grep -q "Up"; then
+    print_color 31 41 "Docker is not running. Please start Docker and try again."
+    exit 1
+  fi
+  else 
+    print_color 31 41 "Some services failed to start. Please check the logs for details."
+  fi
 fi

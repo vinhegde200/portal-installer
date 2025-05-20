@@ -263,7 +263,7 @@ services:
     networks:
       - pkgportal-network
   eflow:
-    image: ghcr.io/eps-dockermanager/custom-eflow:12.2.122040.24
+    image: ghcr.io/eps-dockermanager/custom-eflow:${EFLOW_VERSION}
     container_name: eflow
     ports:
       - "8081:8081"
