@@ -51,9 +51,9 @@ if "%eflow_choice%"=="1" (
 REM Download configuration files
 echo Downloading application files...
 if "%central_eflow%"=="true" (
-    curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml
+    curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2-windows.yml
 ) else (
-    curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2-eflow.yml
+    curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2-eflow-windows.yml
 )
 if %errorlevel% neq 0 (
     echo Failed to download compose.yml. Please check your internet connection and try again.
