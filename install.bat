@@ -29,18 +29,20 @@ if "%container_choice%"=="1" (
 )
 
 REM Select eflow type
-echo Select the type of eflow you want to install:
-echo 1. Central eflow
-echo 2. Local eflow
+echo Select the type of eflow server you want to install:
+echo 1. Customer eflow server
+echo 2. Local eflow server
 set central_eflow=true
 set eflow_version=12.2.122040.24
 set /p eflow_choice="Enter your choice (1 or 2): "
 
 if "%eflow_choice%"=="1" (
+    echo You have selected Customer eflow server.
 ) else (
     if "%eflow_choice%"=="2" (
+        echo You have selected Local eflow server.
         set central_eflow=false
-        set /p user_version="Enter eflow version (default is 12.2.122040.24): "
+        set /p user_version="Enter the eflow version to be installed(if you want default version press enter): "
         if not "%user_version%"=="" (
             set eflow_version=%user_version%
         )

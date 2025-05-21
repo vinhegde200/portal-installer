@@ -38,17 +38,16 @@ fi
 central_eflow=true
 eflow_version="12.2.122040.24"
 # select eflow type. localhosted or central
-print_color 31 43 "Select the type of eflow you want to install:"
-print_color 31 43 "1. Central eflow"
-print_color 31 43 "2. Local eflow"
+print_color 31 43 "Select the type of eflow server you want to install:"
+print_color 31 43 "1. Customer eflow server"
+print_color 31 43 "2. Local eflow server"
 read -p "Enter your choice (1 or 2): " eflow_choice
 if [[ "$eflow_choice" == "1" ]]; then
-  print_color 31 43 "You have selected Central eflow."
+  print_color 31 43 "You have selected Customer eflow server."
 elif [[ "$eflow_choice" == "2" ]]; then
-  print_color 31 43 "You have selected Local eflow."
+  print_color 31 43 "You have selected Local eflow server."
   central_eflow=false
-  print_color 31 43 "Please enter eflow version, if you want default press enter:"
-  read -p "Enter the version to be installed: " eflow_version
+  read -p "Enter the eflow version to be installed(if you want default version press enter): " eflow_version
   if [ -z "$eflow_version" ]; then
     eflow_version="12.2.122040.24"
   fi
@@ -62,13 +61,13 @@ if ["$container_choice" == "1" ]; then #podman
   # if central_eflow is true, set the eflow version to latest
   if [ "$central_eflow" = true ]; then
     # Clone or download configuration files
-    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/install-script-for-eflow/compose-podman.yml; then
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-podman.yml; then
       print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
       exit 1
     fi
   else
     # Clone or download configuration files
-    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/install-script-for-eflow/compose-podman-eflow.yml; then
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-podman-eflow.yml; then
       print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
       exit 1
     fi
@@ -77,13 +76,13 @@ else #docker
   # if central_eflow is true, set the eflow version to latest
   if [ "$central_eflow" = true ]; then
     # Clone or download configuration files
-    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/install-script-for-eflow/compose-v2.yml; then
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-v2.yml; then
       print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
       exit 1
     fi
   else
     # Clone or download configuration files
-    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/install-script-for-eflow/compose-docker-eflow.yml; then
+    if ! curl -o compose.yml https://raw.githubusercontent.com/vinhegde200/portal-installer/refs/heads/main/compose-docker-eflow.yml; then
       print_color 31 41 "Failed to download compose.yml. Please check your internet connection and try again."
       exit 1
     fi
@@ -115,12 +114,12 @@ echo "EFLOW_VERSION=${eflow_version}" >> .env
 # Pull Docker images
 print_color 31 43 "Pulling Docker images..."
 if [ "$container_choice" == "1" ]; then
-  if ! podman compose -f compose.yaml pull; then
+  if ! podman compose -f compose.yml pull; then
     print_color 31 41 "Failed to pull Docker images. Please check your Docker setup."
     exit 1
   fi
 else
-  if ! docker compose -f compose.yaml pull; then
+  if ! docker compose -f compose.yml pull; then
     print_color 31 41 "Failed to pull Docker images. Please check your Docker setup."
     exit 1
   fi
@@ -145,17 +144,13 @@ if [ "$container_choice" == "1" ]; then
   # Check if Podman is running
   if podman compose ps | grep -q "Up"; then
     print_color 31 43 "Installation complete. Configure your application at http://localhost:8083/#/admin/setup"
-    exit 1
-  fi
   else
-     print_color 31 41 "Some services failed to start. Please check the logs for details."
+    print_color 31 41 "Some services failed to start. Please check the logs for details."
   fi
 else
   # Check if Docker is running
   if docker compose ps | grep -q "Up"; then
-    print_color 31 41 "Docker is not running. Please start Docker and try again."
-    exit 1
-  fi
+    print_color 31 43 "Installation complete. Configure your application at http://localhost:8083/#/admin/setup"
   else 
     print_color 31 41 "Some services failed to start. Please check the logs for details."
   fi
