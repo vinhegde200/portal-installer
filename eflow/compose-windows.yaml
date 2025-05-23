@@ -2,7 +2,7 @@ version: "3.8"
 name: eflow
 services:
   eflow:
-    image: ghcr.io/eps-dockermanager/custom-eflow:${TAG_NAME}
+    image: custom-eflow:${EFLOW_VERSION}
     container_name: eflow
     build:
       context: .

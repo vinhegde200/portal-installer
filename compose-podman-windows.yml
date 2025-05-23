@@ -1,0 +1,232 @@
+name: pkgportal
+services:
+  nginx-web:
+    image: ghcr.io/eps-dockermanager/pkgportal-web:${ENV_IMAGE_VER}
+    container_name: weblb
+    ports:
+      - 8083:8083
+    networks:
+      - pkgportal-network
+    volumes:
+      - nginx_data:/cert:Z
+  pkgportal-db:
+    image: ghcr.io/eps-dockermanager/pkgportal-db:${ENV_IMAGE_VER}
+    container_name: pkgportal-db
+    volumes:
+      - pkgportal-db_data:/var/lib/postgresql/data:Z
+    environment:
+      POSTGRES_DB: pkgportal
+      POSTGRES_USER: pkgportaluser
+      POSTGRES_PASSWORD: pkgportalpwd
+      KEYCLOAK_DB: keycloak
+      KEYCLOAK_DB_USERNAME: keycloakuser
+      KEYCLOAK_DB_PASSWORD: keycloakpwd
+    networks:
+      - pkgportal-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: '1024MB'
+  keycloak:
+    image: ghcr.io/eps-dockermanager/pkgportal-im:${ENV_IMAGE_VER}
+    container_name: keycloak-im
+    hostname: keycloak-im
+    depends_on:
+      pkgportal-db:
+        condition: service_healthy
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://pkgportal-db:5432/keycloak
+      - KC_DB_USERNAME=keycloakuser
+      - KC_DB_PASSWORD=keycloakpwd
+      - KEYCLOAK_ADMIN=admin
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+      - KEYCLOAK_ADMIN_PASSWORD=admin123
+      - KEYCLOAK_ACCESS_TOKEN_LIFESPAN=1h
+      - KEYCLOAK_LOGLEVEL=ALL
+      - KC_HOSTNAME_STRICT=false
+      - KC_EDGE=proxy
+      - KC_METRICS_PROMETHEUS=true
+      - KC_HTTP_MANAGEMENT_PORT=9000
+      - KC_HOSTNAME_STRICT_HTTPS=false
+      - KC_HTTP_PORT=8084
+      - KC_HTTPS_PORT=8443
+      - KC_PROXY_HEADERS=xforwarded
+      - KC_HOSTNAME_STRICT_BACKCHANNEL=false
+      - KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true
+      - KC_HOSTNAME=http://keycloak-im:8084
+      - KC_LOG=file
+      - KC_LOG_FILE=/opt/keycloak/logs/keycloak.log
+      - KC_LOG_LEVEL=INFO
+      - KC_LOG_FORMAT="%d{yyyy-MM-dd HH:mm} %-5p [%c{2.}] (%t) %s%e%n"
+      - KC_LOG_ROTATION_MAX_FILE_SIZE=10MB
+      - KC_LOG_ROTATION_MAX_FILES=30
+    networks:
+      - pkgportal-network
+    healthcheck:
+      test: ["CMD", "/bin/bash", "-c", "exec 6<>/dev/tcp/localhost/8084 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: '1024M'
+  redis:
+    image: redis:latest
+    container_name: redis
+    restart: always
+    volumes:
+      - redis_data:/data:Z
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - pkgportal-network
+  liquibase-update:
+    image: ghcr.io/eps-dockermanager/pkgportal-dbmanager:${ENV_IMAGE_VER}
+    container_name: liquibase-update
+    depends_on:
+      pkgportal-db:
+        condition: service_healthy
+    environment:
+    - LIQUIBASE_COMMAND_URL=jdbc:postgresql://pkgportal-db:5432/pkgportal
+    - LIQUIBASE_COMMAND_CHANGELOG_FILE=/changelog.xml
+    - LIQUIBASE_COMMAND_USERNAME=pkgportaluser
+    - LIQUIBASE_COMMAND_PASSWORD=pkgportalpwd
+    command: liquibase update
+    networks:
+      - pkgportal-network
+  pkgportal-api:
+    image: ghcr.io/eps-dockermanager/pkgportal-api:${ENV_IMAGE_VER}
+    container_name: pkgportal-api
+    depends_on:
+      redis:
+        condition: service_healthy
+      pkgportal-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:5020/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    environment:
+      HTTP_PORTS: 5020
+      DATABRIDGE_SERVICE_URL: "http://pkgportal-databridge:5021"
+      NOTIFICATION_SERVICE_URL: "http://notification:5028"
+      DATAEXPORTER_SERVICE_URL: "http://pkgportal-dataexporter:5022"
+    volumes:
+      - pkgportal-api_data:/App/data:Z
+      - shared_reports:/App/reports:z
+      - pkgportal_logs:/App/Logs:z
+    networks:
+      - pkgportal-network
+  pkgportal-databridge:
+    image: ghcr.io/eps-dockermanager/pkgportal-databridge:${ENV_IMAGE_VER}
+    container_name: pkgportal-databridge
+    depends_on:
+      redis:
+        condition: service_healthy
+      pkgportal-db:
+        condition: service_healthy
+    volumes:
+      - pkgportal_logs:/App/Logs:z
+    environment:
+      HTTP_PORTS: 5021
+    networks:
+      - pkgportal-network
+  pkgportal-dataexporter:
+    image: ghcr.io/eps-dockermanager/pkgportal-dataexporter:${ENV_IMAGE_VER}
+    container_name: pkgportal-dataexporter
+    depends_on:
+      redis:
+        condition: service_healthy
+      pkgportal-db:
+        condition: service_healthy
+    environment:
+      HTTP_PORTS: 5022
+    volumes:
+      - pkgportal-api_data:/App/data:Z
+      - shared_reports:/App/reports:z
+      - pkgportal_logs:/App/Logs:z
+    networks:
+      - pkgportal-network
+  notification:
+    image: ghcr.io/eps-dockermanager/pkgportal-notification:${ENV_IMAGE_VER}
+    container_name: notification
+    depends_on:
+      redis:
+        condition: service_healthy
+      pkgportal-db:
+        condition: service_healthy
+    environment:
+      HTTP_PORTS: 5028
+    volumes:
+      - pkgportal-api_data:/App/data:Z
+      - pkgportal_logs:/App/Logs:z
+    networks:
+      - pkgportal-network
+  prometheus:
+    image: ghcr.io/eps-dockermanager/custom-prometheus:${ENV_IMAGE_VER}
+    container_name: prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    volumes:
+      - prometheus_data:/prometheus:Z
+    networks:
+      - pkgportal-network
+  grafana:
+    image: ghcr.io/eps-dockermanager/custom-grafana:${ENV_IMAGE_VER}
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    depends_on:
+     - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana:Z
+    networks:
+      - pkgportal-network
+  postgres-exporter:
+    image: ghcr.io/eps-dockermanager/custom-postgres-exporter:${ENV_IMAGE_VER}
+    container_name: postgres-exporter
+    environment:
+      DATA_SOURCE_URI: "pkgportal-db:5432/pkgportal?sslmode=disable"
+      DATA_SOURCE_USER: pkgportaluser
+      DATA_SOURCE_PASS: pkgportalpwd
+      EXTENSION: "pg_stat_statements"
+    command:
+      - "--extend.query-path=/etc/custom-queries.yaml"
+    depends_on:
+      pkgportal-db:
+        condition: service_healthy
+    networks:
+      - pkgportal-network
+networks:
+  pkgportal-network: {}
+volumes:
+  nginx_data: {}
+  pkgportal-db_data: {}
+  redis_data: {}
+  pkgportal-api_data: {}
+  shared_reports: {}
+  pkgportal_logs: {}
+  prometheus_data: {}
+  grafana_data: {}
