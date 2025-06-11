@@ -219,5 +219,37 @@ services:
         condition: service_healthy
     networks:
       - pkgportal-network
+  eflow:
+    image: ghcr.io/eps-dockermanager/custom-eflow:12.2.122040.24
+    container_name: eflow
+    ports:
+      - "8081:8081"
+      - "6543:6543"
+      - "6161:6161"
+      - "9200:9200"
+    restart: unless-stopped
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    environment:
+      - STATE=up
+      - CENTRAL_EFLOW=1
+      - EMAIL=radiushub@epssw.com
+      - COMPANY=ePS
+      - MACHINENAME=localdev
+    deploy:
+      resources:
+        limits:
+          memory: '6144MB'
+    networks:
+      - pkgportal-network
+    volumes:
+      - ./eflow_data/instance:/eflow/instance:z
+      - ./eflow_data/logs:/eflow/logs:z
+      - ./eflow_data/elasticsearch/data:/var/lib/elasticsearch:z
+      - ./eflow_data/elasticsearch/logs:/var/log/elasticsearch:z
+      - ./eflow_data/dbbackup:/eflow/dbbackup:z
+      - ./eflow_data/db:/var/lib/postgresql/17/main/:z
 networks:
   pkgportal-network: {}
